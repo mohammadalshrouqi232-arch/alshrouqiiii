@@ -1,0 +1,356 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: parties
+    description: Study party operations
+  - name: ai
+    description: Personalized study assistant operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /parties:
+    get:
+      operationId: listParties
+      tags: [parties]
+      summary: List study parties
+      responses:
+        "200":
+          description: Available study parties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Party"
+    post:
+      operationId: createParty
+      tags: [parties]
+      summary: Create a study party
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartyInput"
+      responses:
+        "201":
+          description: Created study party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+  /parties/{partyId}:
+    get:
+      operationId: getParty
+      tags: [parties]
+      summary: Get one study party
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+      responses:
+        "200":
+          description: Study party details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "404":
+          description: Party not found
+    post:
+      operationId: joinParty
+      tags: [parties]
+      summary: Join a study party
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinPartyInput"
+      responses:
+        "200":
+          description: Updated study party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "404":
+          description: Party not found
+  /parties/{partyId}/messages:
+    get:
+      operationId: listPartyMessages
+      tags: [parties]
+      summary: List messages in a study party
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+      responses:
+        "200":
+          description: Party messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartyMessage"
+    post:
+      operationId: createPartyMessage
+      tags: [parties]
+      summary: Send a message to a study party
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartyMessageInput"
+      responses:
+        "201":
+          description: Sent party message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyMessage"
+  /parties/{partyId}/premium:
+    post:
+      operationId: setPartyPremium
+      tags: [parties]
+      summary: Set whether a party has premium moderation features enabled
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPartyPremiumInput"
+      responses:
+        "200":
+          description: Updated premium status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, isPremium]
+                properties:
+                  id: { type: number }
+                  isPremium: { type: boolean }
+        "403":
+          description: Only the party's host can change this
+        "404":
+          description: Party not found
+  /parties/{partyId}/messages/deleted:
+    get:
+      operationId: listDeletedPartyMessages
+      tags: [parties]
+      summary: List deleted messages in a study party (premium only)
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+      responses:
+        "200":
+          description: Deleted party messages, visible only for premium parties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartyMessage"
+        "403":
+          description: This party does not have premium enabled
+        "404":
+          description: Party not found
+  /parties/{partyId}/messages/{messageId}:
+    delete:
+      operationId: deletePartyMessage
+      tags: [parties]
+      summary: Delete a message you sent (requires the delete token you got when you sent it)
+      parameters:
+        - $ref: "#/components/parameters/PartyId"
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeletePartyMessageInput"
+      responses:
+        "200":
+          description: Message deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyMessage"
+        "403":
+          description: Delete token did not match
+        "404":
+          description: Message not found
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [parties]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /ai/chat:
+    post:
+      operationId: chatWithAssistant
+      tags: [ai]
+      summary: Ask a personalized AI study assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssistantChatInput"
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssistantChatResponse"
+        "502":
+          description: AI service unavailable
+components:
+  parameters:
+    PartyId:
+      name: partyId
+      in: path
+      required: true
+      schema:
+        type: number
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Party:
+      type: object
+      required: [id, name, subject, description, host, accent, visibility, memberCount, maxMembers, isLive, isPremium, createdAt]
+      properties:
+        id: { type: number }
+        name: { type: string }
+        subject: { type: string }
+        description: { type: string }
+        host: { type: string }
+        accent: { type: string }
+        visibility:
+          type: string
+          enum: [public, private]
+        memberCount: { type: number }
+        maxMembers: { type: number }
+        isLive: { type: boolean }
+        isPremium: { type: boolean }
+        createdAt: { type: string }
+    PartyInput:
+      type: object
+      required: [name, subject, description, host]
+      properties:
+        name: { type: string, minLength: 2 }
+        subject: { type: string, minLength: 2 }
+        description: { type: string, minLength: 2 }
+        host: { type: string, minLength: 1 }
+        maxMembers: { type: number, minimum: 2, maximum: 50 }
+        accent: { type: string }
+        isPremium: { type: boolean }
+        visibility:
+          type: string
+          enum: [public, private]
+    JoinPartyInput:
+      type: object
+      required: [memberName]
+      properties:
+        memberName: { type: string, minLength: 1 }
+    PartyMessage:
+      type: object
+      required: [id, partyId, sender, content, createdAt]
+      properties:
+        id: { type: number }
+        partyId: { type: number }
+        sender: { type: string }
+        content: { type: string }
+        createdAt: { type: string }
+        deletedAt:
+          type: ["string", "null"]
+          description: Set when the message has been deleted. Content is only included alongside this for premium parties; regular parties omit deleted messages entirely.
+        deleteToken:
+          type: string
+          description: Only present in the response right after you create a message. Save it client-side; it is required to delete that message later. Never returned when listing messages.
+    PartyMessageInput:
+      type: object
+      required: [sender, content]
+      properties:
+        sender: { type: string, minLength: 1 }
+        content: { type: string, minLength: 1 }
+        clientId:
+          type: string
+          description: A random id the client generates and persists locally, used only to apply the short cooldown after a flagged message. Not an account identifier.
+    SetPartyPremiumInput:
+      type: object
+      required: [host, isPremium]
+      properties:
+        host: { type: string, minLength: 1, description: "Must match the party's host name; acts as a simple owner check since there are no party-level accounts." }
+        isPremium: { type: boolean }
+    DeletePartyMessageInput:
+      type: object
+      required: [deleteToken]
+      properties:
+        deleteToken: { type: string }
+    Dashboard:
+      type: object
+      required: [partyCount, liveCount, totalMembers, messagesSent, recentParties]
+      properties:
+        partyCount: { type: number }
+        liveCount: { type: number }
+        totalMembers: { type: number }
+        messagesSent: { type: number }
+        recentParties:
+          type: array
+          items:
+            $ref: "#/components/schemas/Party"
+    AssistantChatInput:
+      type: object
+      required: [assistantName, message]
+      properties:
+        assistantName: { type: string, minLength: 1, maxLength: 40 }
+        message: { type: string, minLength: 1, maxLength: 2000 }
+        context: { type: string }
+    AssistantChatResponse:
+      type: object
+      required: [assistantName, reply]
+      properties:
+        assistantName: { type: string }
+        reply: { type: string }
+

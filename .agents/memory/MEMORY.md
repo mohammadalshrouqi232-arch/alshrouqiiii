@@ -1,0 +1,3 @@
+- [OpenAPI numeric compatibility](orval-integer-compatibility.md) — this workspace's generated validators can reject OpenAPI integer schemas when the runtime Zod version lacks zod.int().
+- [Assistant provider fallback](assistant-provider-fallback.md) — managed OpenAI provisioning requires an upgrade here, so assistant UX must remain useful when direct-provider quota is unavailable.
+- [Workspace package installs](workspace-package-install.md) — dependency installs for one workspace package need a package-scoped pnpm command, not a root add.

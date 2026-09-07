@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Study Party"
+description = "A vibrant social study space for teens to create or join focused study parties, chat with friends, start voice or video sessions, and ask a personalized AI study assistant for help."
+version = "1.0.0"
+id = "artifacts/study-party"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23383
+
+[services.development]
+run = "pnpm --filter @workspace/study-party run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/study-party", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/study-party/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23383"
+BASE_PATH = "/"
